@@ -108,7 +108,7 @@ st.markdown(
 st.caption("Track group results with Google Sheets as the single source of truth.")
 
 # Load data once; downstream pages will reuse cached data.
-df, dq = data.load_dataset()
+df, dq = data.load_dataset(gc=gc, sheet_id=sheet_id, worksheet_name=ws_name)
 ui.show_mode_banner(dq)
 ui.render_refresh_button()
 
