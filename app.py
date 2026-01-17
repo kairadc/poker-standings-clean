@@ -1,6 +1,19 @@
+import json
+
 import streamlit as st
+from google.oauth2 import service_account
+import gspread
 
 from src import data, ui
+
+service_account_info = json.loads(st.secrets["GCP_SERVICE_ACCOUNT_JSON"])
+
+creds = service_account.Credentials.from_service_account_info(
+    service_account_info,
+    scopes=["https://www.googleapis.com/auth/spreadsheets"],
+)
+
+gc = gspread.authorize(creds)
 
 st.set_page_config(
     page_title="Friends Poker Standings",
