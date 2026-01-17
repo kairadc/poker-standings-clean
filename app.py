@@ -1,12 +1,26 @@
+import gspread
+import json
+
 import streamlit as st
 from google.oauth2 import service_account
-import gspread
 
 from src import data, ui
 
-service_account_info = dict(st.secrets["gcp_service_account"])
+raw_service_account = st.secrets["gcp_service_account"]
+if isinstance(raw_service_account, str):
+    try:
+        service_account_info = json.loads(raw_service_account)
+    except json.JSONDecodeError:
+        # Handle pretty-printed or already-escaped JSON strings
+        service_account_info = json.loads(raw_service_account.replace("\n", "\\n"))
+else:
+    service_account_info = dict(raw_service_account)
+
+private_key = service_account_info.get("private_key")
+if not private_key:
+    raise ValueError("private_key missing in gcp_service_account secret.")
 # Convert literal "\n" sequences into real newlines (PEM needs this)
-service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
+service_account_info["private_key"] = private_key.replace("\\n", "\n")
 
 creds = service_account.Credentials.from_service_account_info(
     service_account_info,
