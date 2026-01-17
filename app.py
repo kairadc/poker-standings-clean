@@ -5,6 +5,13 @@ import json
 import streamlit as st
 from google.oauth2 import service_account
 
+# Set page config as the first Streamlit call.
+st.set_page_config(
+    page_title="Friends Poker Standings",
+    page_icon="🃏",
+    layout="wide",
+)
+
 from src import data, ui
 
 # Debug visibility for secrets in runtime (safe, key names only)
@@ -84,12 +91,6 @@ ws_name = (
     or os.environ.get("WORKSHEET_NAME")
     or os.environ.get("worksheet_name")
     or "sessions"
-)
-
-st.set_page_config(
-    page_title="Friends Poker Standings",
-    page_icon="🃏",
-    layout="wide",
 )
 
 # Optional redirect to Overview; disable with ?no_redirect=1 for diagnostics
