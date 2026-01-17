@@ -110,20 +110,12 @@ def normalize_dataframe(df: pd.DataFrame) -> Tuple[pd.DataFrame, DataQuality]:
     return working, dq
 
 
-@st.cache_data(
-    ttl=CACHE_TTL_SECONDS,
-    show_spinner=False,
-    hash_funcs={gspread.client.Client: lambda _: "gc"},
-)
 def load_dataset(
     gc: gspread.client.Client | None = None,
     sheet_id: str | None = None,
     worksheet_name: str | None = None,
 ) -> Tuple[pd.DataFrame, DataQuality]:
-    """Load from Google Sheets if configured, else fall back to sample CSV."""
-    dq = DataQuality()
-    df = pd.DataFrame()
-    headers: List[str] = []
+    """Resolve config then load from Google Sheets if configured, else fall back to sample CSV."""
     fail_on_error = str(st.secrets.get("FAIL_ON_DATA_ERROR", "0")) == "1"
     use_demo = str(st.secrets.get("USE_DEMO_DATA", "0")) == "1"
 
@@ -131,7 +123,27 @@ def load_dataset(
     sheet_id = sheet_id or ss_id
     worksheet_name = worksheet_name or ws_name_cfg or DEFAULT_WORKSHEET_NAME
 
-    live_configured = bool(sheet_id) and bool(sa_info)
+    return _load_dataset_cached(gc, sheet_id, worksheet_name, fail_on_error, use_demo, bool(sa_info))
+
+
+@st.cache_data(
+    ttl=CACHE_TTL_SECONDS,
+    show_spinner=False,
+    hash_funcs={gspread.client.Client: lambda _: "gc"},
+)
+def _load_dataset_cached(
+    gc: gspread.client.Client | None,
+    sheet_id: str | None,
+    worksheet_name: str | None,
+    fail_on_error: bool,
+    use_demo: bool,
+    has_service_account: bool,
+) -> Tuple[pd.DataFrame, DataQuality]:
+    dq = DataQuality()
+    df = pd.DataFrame()
+    headers: List[str] = []
+
+    live_configured = bool(sheet_id) and has_service_account
     use_live = (bool(gc) and bool(sheet_id) or live_configured) and not use_demo
 
     if use_live and gc:
@@ -150,15 +162,12 @@ def load_dataset(
             if fail_on_error:
                 raise
         else:
-            # Successful fetch; return normalized sheets data.
             normalized, norm_dq = normalize_dataframe(df)
             dq.issues.extend(norm_dq.issues)
             dq.warnings.update(norm_dq.warnings)
             dq.headers = headers or norm_dq.headers
             return normalized, dq
-        # If configured but failed and not failing hard, fall through to secrets-based fetch or demo.
 
-    # If live is configured via secrets (or gc not provided), attempt secrets-based fetch.
     if use_live and not df.shape[0]:
         try:
             df, headers = sheets.fetch_sheet(spreadsheet_id=sheet_id, worksheet_name=worksheet_name)
@@ -177,7 +186,6 @@ def load_dataset(
             if fail_on_error:
                 raise
 
-    # If not configured or demo explicitly requested, fall back to sample data.
     if df is None or df.empty:
         try:
             df = pd.read_csv(SAMPLE_CSV_PATH)
