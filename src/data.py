@@ -115,10 +115,15 @@ def load_dataset() -> Tuple[pd.DataFrame, DataQuality]:
     df = pd.DataFrame()
     headers: List[str] = []
     fail_on_error = str(st.secrets.get("FAIL_ON_DATA_ERROR", "0")) == "1"
+    use_demo = str(st.secrets.get("USE_DEMO_DATA", "0")) == "1"
 
-    if sheets.is_configured():
+    ss_id, ws_name_cfg, sa_info = sheets.get_sheets_secrets()
+    live_configured = bool(ss_id) and bool(sa_info)
+    use_live = live_configured and not use_demo
+
+    if use_live:
         try:
-            df, headers = sheets.fetch_sheet()
+            df, headers = sheets.fetch_sheet(spreadsheet_id=ss_id, worksheet_name=ws_name_cfg)
             dq.source = "sheets"
             if df is None or df.empty:
                 dq.issues.append("Google Sheet is empty. Add rows to see data.")
@@ -136,7 +141,7 @@ def load_dataset() -> Tuple[pd.DataFrame, DataQuality]:
             return normalized, dq
         # If configured but failed and not failing hard, fall through to demo below.
 
-    # If not configured, fall back to sample data.
+    # If not configured or demo explicitly requested, fall back to sample data.
     if df is None or df.empty:
         try:
             df = pd.read_csv(SAMPLE_CSV_PATH)
