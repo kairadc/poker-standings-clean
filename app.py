@@ -106,7 +106,10 @@ if sheet_id and gc and not st.session_state.get("did_initial_refresh"):
 # Optional redirect to Overview; disable with ?no_redirect=1 for diagnostics
 params = st.query_params
 if "no_redirect" not in params:
-    pass  # Keep the root page accessible; navigation is available in the sidebar
+    try:
+        st.switch_page("pages/1_Overview.py")
+    except Exception:
+        pass
 
 ui.apply_centered_layout()
 
