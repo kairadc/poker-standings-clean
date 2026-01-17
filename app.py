@@ -6,7 +6,22 @@ from google.oauth2 import service_account
 
 from src import data, ui
 
-raw_service_account = st.secrets["gcp_service_account"]
+# Load service account from any supported key to avoid KeyErrors in cloud/local.
+raw_service_account = (
+    st.secrets.get("gcp_service_account")
+    or st.secrets.get("gcp_service_account_json")
+    or st.secrets.get("GCP_SERVICE_ACCOUNT_JSON")
+    or st.secrets.get("service_account")
+    or st.secrets.get("service_account_json")
+)
+
+if raw_service_account is None and "sheets" in st.secrets:
+    cfg = st.secrets["sheets"]
+    raw_service_account = cfg.get("service_account") or cfg.get("service_account_json")
+
+if raw_service_account is None:
+    raise KeyError("Service account details not found in secrets.")
+
 if isinstance(raw_service_account, str):
     try:
         service_account_info = json.loads(raw_service_account)
@@ -44,8 +59,17 @@ creds = service_account.Credentials.from_service_account_info(
 )
 
 gc = gspread.authorize(creds)
-sheet_id = st.secrets.get("SHEET_ID")
-ws_name = st.secrets.get("WORKSHEET_NAME", "sessions")
+sheet_id = (
+    st.secrets.get("SHEET_ID")
+    or st.secrets.get("spreadsheet_id")
+    or (st.secrets.get("sheets", {}).get("spreadsheet_id") if "sheets" in st.secrets else None)
+)
+ws_name = (
+    st.secrets.get("WORKSHEET_NAME")
+    or st.secrets.get("worksheet_name")
+    or (st.secrets.get("sheets", {}).get("worksheet_name") if "sheets" in st.secrets else None)
+    or "sessions"
+)
 
 st.set_page_config(
     page_title="Friends Poker Standings",
