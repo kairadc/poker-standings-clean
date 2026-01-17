@@ -114,28 +114,33 @@ def load_dataset() -> Tuple[pd.DataFrame, DataQuality]:
     dq = DataQuality()
     df = pd.DataFrame()
     headers: List[str] = []
-    loaded_from_sheets = False
 
     if sheets.is_configured():
         try:
             df, headers = sheets.fetch_sheet()
             dq.source = "sheets"
-            loaded_from_sheets = True
             if df is None or df.empty:
                 dq.issues.append("Google Sheet is empty. Add rows to see data.")
         except Exception as exc:  # pylint: disable=broad-except
             dq.issues.append(f"Sheets load failed: {type(exc).__name__}: {exc}")
+            dq.source = "sheets"
+        # If configured, never fall back to sample; return what we have (possibly empty).
+        normalized, norm_dq = normalize_dataframe(df)
+        dq.issues.extend(norm_dq.issues)
+        dq.warnings.update(norm_dq.warnings)
+        dq.headers = headers or norm_dq.headers
+        return normalized, dq
 
+    # If not configured, fall back to sample data.
     if df is None or df.empty:
-        if not loaded_from_sheets:
-            try:
-                df = pd.read_csv(SAMPLE_CSV_PATH)
-                dq.source = "sample"
-                dq.issues.append("Using bundled sample data (demo mode).")
-                headers = headers or list(df.columns)
-            except FileNotFoundError:
-                dq.issues.append(f"Sample data missing at {SAMPLE_CSV_PATH}")
-                df = pd.DataFrame()
+        try:
+            df = pd.read_csv(SAMPLE_CSV_PATH)
+            dq.source = "sample"
+            dq.issues.append("Using bundled sample data (demo mode).")
+            headers = headers or list(df.columns)
+        except FileNotFoundError:
+            dq.issues.append(f"Sample data missing at {SAMPLE_CSV_PATH}")
+            df = pd.DataFrame()
 
     normalized, norm_dq = normalize_dataframe(df)
     dq.issues.extend(norm_dq.issues)
