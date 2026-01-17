@@ -19,8 +19,16 @@ else:
 private_key = service_account_info.get("private_key")
 if not private_key:
     raise ValueError("private_key missing in gcp_service_account secret.")
-# Convert literal "\n" sequences into real newlines (PEM needs this)
-service_account_info["private_key"] = private_key.replace("\\n", "\n")
+# Normalize PEM formatting: strip outer quotes, fix escaped newlines, and normalize line breaks.
+normalized_pk = private_key.strip()
+if (normalized_pk.startswith('"') and normalized_pk.endswith('"')) or (
+    normalized_pk.startswith("'") and normalized_pk.endswith("'")
+):
+    normalized_pk = normalized_pk[1:-1].strip()
+normalized_pk = normalized_pk.replace("\\n", "\n").replace("\r\n", "\n").replace("\r", "\n")
+service_account_info["private_key"] = normalized_pk
+if "BEGIN PRIVATE KEY" not in normalized_pk or "END PRIVATE KEY" not in normalized_pk:
+    raise ValueError("private_key format looks invalid after normalization; confirm secrets TOML.")
 
 creds = service_account.Credentials.from_service_account_info(
     service_account_info,
