@@ -6,11 +6,7 @@ import streamlit as st
 from google.oauth2 import service_account
 
 # Set page config as the first Streamlit call.
-st.set_page_config(
-    page_title="Friends Poker Standings",
-    page_icon="🃏",
-    layout="wide",
-)
+st.set_page_config(page_title="Poker Standings", page_icon="🃏", layout="wide")
 
 from src import data, sheets, ui
 
@@ -113,7 +109,7 @@ if "no_redirect" not in params:
 
 ui.apply_centered_layout()
 
-st.title("Friends Poker Standings")
+st.title("Poker Standings")
 st.markdown(
     '<div class="arcade-marquee"><span>🎮 SEASON MODE • 🏆 LEADERBOARD LIVE • 💰 ENTER RESULTS TO UPDATE •</span></div>',
     unsafe_allow_html=True,
