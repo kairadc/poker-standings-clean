@@ -114,6 +114,7 @@ def load_dataset() -> Tuple[pd.DataFrame, DataQuality]:
     dq = DataQuality()
     df = pd.DataFrame()
     headers: List[str] = []
+    fail_on_error = str(st.secrets.get("FAIL_ON_DATA_ERROR", "0")) == "1"
 
     if sheets.is_configured():
         try:
@@ -124,12 +125,16 @@ def load_dataset() -> Tuple[pd.DataFrame, DataQuality]:
         except Exception as exc:  # pylint: disable=broad-except
             dq.issues.append(f"Sheets load failed: {type(exc).__name__}: {exc}")
             dq.source = "sheets"
-        # If configured, never fall back to sample; return what we have (possibly empty).
-        normalized, norm_dq = normalize_dataframe(df)
-        dq.issues.extend(norm_dq.issues)
-        dq.warnings.update(norm_dq.warnings)
-        dq.headers = headers or norm_dq.headers
-        return normalized, dq
+            if fail_on_error:
+                raise
+        else:
+            # Successful fetch; return normalized sheets data.
+            normalized, norm_dq = normalize_dataframe(df)
+            dq.issues.extend(norm_dq.issues)
+            dq.warnings.update(norm_dq.warnings)
+            dq.headers = headers or norm_dq.headers
+            return normalized, dq
+        # If configured but failed and not failing hard, fall through to demo below.
 
     # If not configured, fall back to sample data.
     if df is None or df.empty:
