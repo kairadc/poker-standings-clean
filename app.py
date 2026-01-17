@@ -12,6 +12,8 @@ creds = service_account.Credentials.from_service_account_info(
 )
 
 gc = gspread.authorize(creds)
+sheet_id = st.secrets["SHEET_ID"]
+ws_name = st.secrets.get("WORKSHEET_NAME", "sessions")
 
 st.set_page_config(
     page_title="Friends Poker Standings",
