@@ -39,12 +39,6 @@ if session_df.empty:
     st.warning("No rows found for this session.")
     st.stop()
 
-# Per-player table
-cols_to_show = [col for col in ["player", "buy_in", "cash_out", "net", "group", "venue"] if col in session_df.columns]
-per_player = session_df[cols_to_show].sort_values("net", ascending=False)
-st.subheader("Per-player results")
-st.dataframe(per_player, width="stretch")
-
 # Build net mapping
 net_by_player = session_df.groupby("player")["net"].sum().to_dict()
 
@@ -60,12 +54,8 @@ st.subheader("Transfers")
 if not transfers:
     st.info("No transfers needed.")
 else:
-    transfers_df = pd.DataFrame(transfers, columns=["payer", "payee", "amount"])
-    st.dataframe(transfers_df, width="stretch")
-
     text_block = settlement.format_transfers_text(transfers)
     st.code(text_block)
-
     if st.button("Copy transfers"):
         st.session_state["_copy_text"] = text_block
         st.toast("Copied!", icon="Copied")
@@ -78,3 +68,11 @@ else:
             """,
             height=0,
         )
+    transfers_df = pd.DataFrame(transfers, columns=["payer", "payee", "amount"])
+    st.dataframe(transfers_df, width="stretch")
+
+# Per-player table
+cols_to_show = [col for col in ["player", "buy_in", "cash_out", "net", "group", "venue"] if col in session_df.columns]
+per_player = session_df[cols_to_show].sort_values("net", ascending=False)
+st.subheader("Per-player results")
+st.dataframe(per_player, width="stretch")
