@@ -323,6 +323,9 @@ def apply_centered_layout(max_width: int = 1200) -> None:
             border-collapse: collapse;
             color: {c['text']};
         }}
+        .leaderboard-wrap {{
+            overflow-x: auto;
+        }}
         .leaderboard-table th, .leaderboard-table td {{
             padding: 10px 8px;
             border-bottom: 1px solid rgba(148, 163, 184, 0.12);
@@ -551,9 +554,11 @@ def render_standings_table(standings: pd.DataFrame) -> None:
         )
 
     table_html = (
+        "<div class='leaderboard-wrap'>"
         "<table class='leaderboard-table'>"
         "<thead><tr><th>Rank</th><th>Player</th><th>Net</th><th>Win %</th><th>Games</th></tr></thead>"
         f"<tbody>{''.join(rows_html)}</tbody></table>"
+        "</div>"
     )
     st.markdown(f"<div class='arcade-card'>{table_html}</div>", unsafe_allow_html=True)
 
