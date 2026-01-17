@@ -4,7 +4,9 @@ import gspread
 
 from src import data, ui
 
-service_account_info = st.secrets["gcp_service_account"]
+service_account_info = dict(st.secrets["gcp_service_account"])
+# Convert literal "\n" sequences into real newlines (PEM needs this)
+service_account_info["private_key"] = service_account_info["private_key"].replace("\\n", "\n")
 
 creds = service_account.Credentials.from_service_account_info(
     service_account_info,
@@ -12,7 +14,7 @@ creds = service_account.Credentials.from_service_account_info(
 )
 
 gc = gspread.authorize(creds)
-sheet_id = st.secrets["SHEET_ID"]
+sheet_id = st.secrets.get("SHEET_ID")
 ws_name = st.secrets.get("WORKSHEET_NAME", "sessions")
 
 st.set_page_config(
