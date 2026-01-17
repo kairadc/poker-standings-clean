@@ -1,12 +1,10 @@
-import json
-
 import streamlit as st
 from google.oauth2 import service_account
 import gspread
 
 from src import data, ui
 
-service_account_info = json.loads(st.secrets["GCP_SERVICE_ACCOUNT_JSON"])
+service_account_info = st.secrets["gcp_service_account"]
 
 creds = service_account.Credentials.from_service_account_info(
     service_account_info,
