@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 
+import gspread
 import pandas as pd
 import streamlit as st
 
@@ -8,6 +9,7 @@ from . import sheets
 from .config import (
     CACHE_TTL_SECONDS,
     DATE_FORMAT,
+    DEFAULT_WORKSHEET_NAME,
     NUMERIC_COLUMNS,
     OPTIONAL_COLUMNS,
     REQUIRED_COLUMNS,
@@ -108,8 +110,16 @@ def normalize_dataframe(df: pd.DataFrame) -> Tuple[pd.DataFrame, DataQuality]:
     return working, dq
 
 
-@st.cache_data(ttl=CACHE_TTL_SECONDS, show_spinner=False)
-def load_dataset() -> Tuple[pd.DataFrame, DataQuality]:
+@st.cache_data(
+    ttl=CACHE_TTL_SECONDS,
+    show_spinner=False,
+    hash_funcs={gspread.client.Client: lambda _: "gc"},
+)
+def load_dataset(
+    gc: gspread.client.Client | None = None,
+    sheet_id: str | None = None,
+    worksheet_name: str | None = None,
+) -> Tuple[pd.DataFrame, DataQuality]:
     """Load from Google Sheets if configured, else fall back to sample CSV."""
     dq = DataQuality()
     df = pd.DataFrame()
@@ -118,12 +128,19 @@ def load_dataset() -> Tuple[pd.DataFrame, DataQuality]:
     use_demo = str(st.secrets.get("USE_DEMO_DATA", "0")) == "1"
 
     ss_id, ws_name_cfg, sa_info = sheets.get_sheets_secrets()
-    live_configured = bool(ss_id) and bool(sa_info)
-    use_live = live_configured and not use_demo
+    sheet_id = sheet_id or ss_id
+    worksheet_name = worksheet_name or ws_name_cfg or DEFAULT_WORKSHEET_NAME
 
-    if use_live:
+    live_configured = bool(sheet_id) and bool(sa_info)
+    use_live = (bool(gc) and bool(sheet_id) or live_configured) and not use_demo
+
+    if use_live and gc:
         try:
-            df, headers = sheets.fetch_sheet(spreadsheet_id=ss_id, worksheet_name=ws_name_cfg)
+            sheet = gc.open_by_key(sheet_id)
+            worksheet = sheet.worksheet(worksheet_name)
+            headers = worksheet.row_values(1)
+            records = worksheet.get_all_records()
+            df = pd.DataFrame(records)
             dq.source = "sheets"
             if df is None or df.empty:
                 dq.issues.append("Google Sheet is empty. Add rows to see data.")
@@ -139,7 +156,26 @@ def load_dataset() -> Tuple[pd.DataFrame, DataQuality]:
             dq.warnings.update(norm_dq.warnings)
             dq.headers = headers or norm_dq.headers
             return normalized, dq
-        # If configured but failed and not failing hard, fall through to demo below.
+        # If configured but failed and not failing hard, fall through to secrets-based fetch or demo.
+
+    # If live is configured via secrets (or gc not provided), attempt secrets-based fetch.
+    if use_live and not df.shape[0]:
+        try:
+            df, headers = sheets.fetch_sheet(spreadsheet_id=sheet_id, worksheet_name=worksheet_name)
+            dq.source = "sheets"
+            if df is None or df.empty:
+                dq.issues.append("Google Sheet is empty. Add rows to see data.")
+            else:
+                normalized, norm_dq = normalize_dataframe(df)
+                dq.issues.extend(norm_dq.issues)
+                dq.warnings.update(norm_dq.warnings)
+                dq.headers = headers or norm_dq.headers
+                return normalized, dq
+        except Exception as exc:  # pylint: disable=broad-except
+            dq.issues.append(f"Sheets load failed: {type(exc).__name__}: {exc}")
+            dq.source = "sheets"
+            if fail_on_error:
+                raise
 
     # If not configured or demo explicitly requested, fall back to sample data.
     if df is None or df.empty:
