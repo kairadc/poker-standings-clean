@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Any, Dict, List, Tuple
 
 import gspread
@@ -26,7 +27,7 @@ def get_sheets_secrets() -> Tuple[str | None, str | None, Dict[str, Any] | None]
     """
     Supports both:
     A) Nested secrets: st.secrets["sheets"][...]
-    B) Flat secrets: st.secrets["service_account_json"], etc.
+    B) Flat secrets: st.secrets["service_account_json"], etc., or env vars.
     """
     if "sheets" in st.secrets:
         cfg = st.secrets["sheets"]
@@ -41,14 +42,29 @@ def get_sheets_secrets() -> Tuple[str | None, str | None, Dict[str, Any] | None]
             service_account_info = None
         return spreadsheet_id, worksheet_name, service_account_info
 
-    spreadsheet_id = st.secrets.get("spreadsheet_id") or st.secrets.get("SHEET_ID")
-    worksheet_name = st.secrets.get("worksheet_name") or st.secrets.get("WORKSHEET_NAME")
+    spreadsheet_id = (
+        st.secrets.get("spreadsheet_id")
+        or st.secrets.get("SHEET_ID")
+        or os.environ.get("spreadsheet_id")
+        or os.environ.get("SHEET_ID")
+    )
+    worksheet_name = (
+        st.secrets.get("worksheet_name")
+        or st.secrets.get("WORKSHEET_NAME")
+        or os.environ.get("worksheet_name")
+        or os.environ.get("WORKSHEET_NAME")
+    )
     sa_raw = (
         st.secrets.get("service_account")
         or st.secrets.get("service_account_json")
         or st.secrets.get("gcp_service_account")
         or st.secrets.get("gcp_service_account_json")
         or st.secrets.get("GCP_SERVICE_ACCOUNT_JSON")
+        or os.environ.get("service_account")
+        or os.environ.get("service_account_json")
+        or os.environ.get("gcp_service_account")
+        or os.environ.get("gcp_service_account_json")
+        or os.environ.get("GCP_SERVICE_ACCOUNT_JSON")
     )
     if isinstance(sa_raw, dict):
         service_account_info = sa_raw

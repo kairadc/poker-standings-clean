@@ -1,4 +1,5 @@
 import gspread
+import os
 import json
 
 import streamlit as st
@@ -13,6 +14,11 @@ raw_service_account = (
     or st.secrets.get("GCP_SERVICE_ACCOUNT_JSON")
     or st.secrets.get("service_account")
     or st.secrets.get("service_account_json")
+    or os.environ.get("gcp_service_account")
+    or os.environ.get("gcp_service_account_json")
+    or os.environ.get("GCP_SERVICE_ACCOUNT_JSON")
+    or os.environ.get("service_account")
+    or os.environ.get("service_account_json")
 )
 
 if raw_service_account is None and "sheets" in st.secrets:
@@ -63,11 +69,15 @@ sheet_id = (
     st.secrets.get("SHEET_ID")
     or st.secrets.get("spreadsheet_id")
     or (st.secrets.get("sheets", {}).get("spreadsheet_id") if "sheets" in st.secrets else None)
+    or os.environ.get("SHEET_ID")
+    or os.environ.get("spreadsheet_id")
 )
 ws_name = (
     st.secrets.get("WORKSHEET_NAME")
     or st.secrets.get("worksheet_name")
     or (st.secrets.get("sheets", {}).get("worksheet_name") if "sheets" in st.secrets else None)
+    or os.environ.get("WORKSHEET_NAME")
+    or os.environ.get("worksheet_name")
     or "sessions"
 )
 
