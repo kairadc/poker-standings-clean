@@ -41,9 +41,15 @@ def get_sheets_secrets() -> Tuple[str | None, str | None, Dict[str, Any] | None]
             service_account_info = None
         return spreadsheet_id, worksheet_name, service_account_info
 
-    spreadsheet_id = st.secrets.get("spreadsheet_id")
-    worksheet_name = st.secrets.get("worksheet_name")
-    sa_raw = st.secrets.get("service_account") or st.secrets.get("service_account_json")
+    spreadsheet_id = st.secrets.get("spreadsheet_id") or st.secrets.get("SHEET_ID")
+    worksheet_name = st.secrets.get("worksheet_name") or st.secrets.get("WORKSHEET_NAME")
+    sa_raw = (
+        st.secrets.get("service_account")
+        or st.secrets.get("service_account_json")
+        or st.secrets.get("gcp_service_account")
+        or st.secrets.get("gcp_service_account_json")
+        or st.secrets.get("GCP_SERVICE_ACCOUNT_JSON")
+    )
     if isinstance(sa_raw, dict):
         service_account_info = sa_raw
     elif isinstance(sa_raw, str):
