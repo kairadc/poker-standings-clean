@@ -7,6 +7,11 @@ from google.oauth2 import service_account
 
 from src import data, ui
 
+# Debug visibility for secrets in runtime (safe, key names only)
+st.write("Secrets keys:", list(st.secrets.keys()))
+st.write("Has SHEET_ID:", "SHEET_ID" in st.secrets)
+st.write("Has gcp_service_account:", "gcp_service_account" in st.secrets)
+
 # Load service account from any supported key to avoid KeyErrors in cloud/local.
 raw_service_account = (
     st.secrets.get("gcp_service_account")
