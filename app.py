@@ -93,10 +93,13 @@ st.set_page_config(
 )
 
 # Redirect root to Overview so it's the landing experience
-try:
-    st.switch_page("pages/1_Overview.py")
-except Exception:
-    pass
+params = st.experimental_get_query_params()
+# Add ?no_redirect=1 to stay on this page (for diagnostics)
+if not params.get("no_redirect"):
+    try:
+        st.switch_page("pages/1_Overview.py")
+    except Exception:
+        pass
 
 ui.apply_centered_layout()
 
