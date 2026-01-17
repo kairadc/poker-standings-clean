@@ -92,14 +92,10 @@ st.set_page_config(
     layout="wide",
 )
 
-# Redirect root to Overview so it's the landing experience
-params = st.query_params  # Streamlit's new query param API
-# Add ?no_redirect=1 to stay on this page (for diagnostics)
+# Optional redirect to Overview; disable with ?no_redirect=1 for diagnostics
+params = st.query_params
 if "no_redirect" not in params:
-    try:
-        st.switch_page("pages/1_Overview.py")
-    except Exception:
-        pass
+    pass  # Keep the root page accessible; navigation is available in the sidebar
 
 ui.apply_centered_layout()
 
