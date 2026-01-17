@@ -20,12 +20,20 @@ private_key = service_account_info.get("private_key")
 if not private_key:
     raise ValueError("private_key missing in gcp_service_account secret.")
 # Normalize PEM formatting: strip outer quotes, fix escaped newlines, and normalize line breaks.
-normalized_pk = private_key.strip()
+normalized_pk = str(private_key).strip()
 if (normalized_pk.startswith('"') and normalized_pk.endswith('"')) or (
     normalized_pk.startswith("'") and normalized_pk.endswith("'")
 ):
     normalized_pk = normalized_pk[1:-1].strip()
+# Handle double-escaped \n first, then single-escaped, then CRLF/CR.
+normalized_pk = normalized_pk.replace("\\\\n", "\\n")
 normalized_pk = normalized_pk.replace("\\n", "\n").replace("\r\n", "\n").replace("\r", "\n")
+# If header/footer are present but body is still single-line, insert newlines.
+if "-----BEGIN PRIVATE KEY-----" in normalized_pk and "-----END PRIVATE KEY-----" in normalized_pk:
+    if "-----BEGIN PRIVATE KEY-----\n" not in normalized_pk:
+        normalized_pk = normalized_pk.replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN PRIVATE KEY-----\n", 1)
+    if "\n-----END PRIVATE KEY-----" not in normalized_pk:
+        normalized_pk = normalized_pk.replace("-----END PRIVATE KEY-----", "\n-----END PRIVATE KEY-----", 1)
 service_account_info["private_key"] = normalized_pk
 if "BEGIN PRIVATE KEY" not in normalized_pk or "END PRIVATE KEY" not in normalized_pk:
     raise ValueError("private_key format looks invalid after normalization; confirm secrets TOML.")
