@@ -93,9 +93,9 @@ st.set_page_config(
 )
 
 # Redirect root to Overview so it's the landing experience
-params = st.query_params
+params = st.query_params  # Streamlit's new query param API
 # Add ?no_redirect=1 to stay on this page (for diagnostics)
-if not params.get("no_redirect"):
+if "no_redirect" not in params:
     try:
         st.switch_page("pages/1_Overview.py")
     except Exception:
