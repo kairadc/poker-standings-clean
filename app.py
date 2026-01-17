@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide",
 )
 
-from src import data, ui
+from src import data, sheets, ui
 
 # Debug visibility for secrets in runtime (safe, key names only)
 st.write("Secrets keys:", list(st.secrets.keys()))
@@ -97,6 +97,11 @@ ws_name = (
 st.session_state["gc"] = gc
 st.session_state["sheet_id"] = sheet_id
 st.session_state["worksheet_name"] = ws_name
+# One-time refresh on first load so live Sheets is used immediately.
+if sheet_id and gc and not st.session_state.get("did_initial_refresh"):
+    sheets.clear_cache()
+    st.cache_data.clear()
+    st.session_state["did_initial_refresh"] = True
 
 # Optional redirect to Overview; disable with ?no_redirect=1 for diagnostics
 params = st.query_params
