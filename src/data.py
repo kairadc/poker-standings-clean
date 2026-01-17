@@ -116,6 +116,13 @@ def load_dataset(
     worksheet_name: str | None = None,
 ) -> Tuple[pd.DataFrame, DataQuality]:
     """Resolve config then load from Google Sheets if configured, else fall back to sample CSV."""
+    # Prefer client and ids stored in session_state if not explicitly provided.
+    if gc is None and "gc" in st.session_state:
+        gc = st.session_state.get("gc")
+    if sheet_id is None:
+        sheet_id = st.session_state.get("sheet_id") if "sheet_id" in st.session_state else None
+    if worksheet_name is None:
+        worksheet_name = st.session_state.get("worksheet_name") if "worksheet_name" in st.session_state else None
     fail_on_error = str(st.secrets.get("FAIL_ON_DATA_ERROR", "0")) == "1"
     use_demo = str(st.secrets.get("USE_DEMO_DATA", "0")) == "1"
 

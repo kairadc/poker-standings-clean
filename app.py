@@ -93,6 +93,11 @@ ws_name = (
     or "sessions"
 )
 
+# Store shared clients/ids for other pages
+st.session_state["gc"] = gc
+st.session_state["sheet_id"] = sheet_id
+st.session_state["worksheet_name"] = ws_name
+
 # Optional redirect to Overview; disable with ?no_redirect=1 for diagnostics
 params = st.query_params
 if "no_redirect" not in params:
