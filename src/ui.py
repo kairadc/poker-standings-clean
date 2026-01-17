@@ -433,9 +433,8 @@ def render_kpi_row(kpis: Dict) -> None:
     """Display top-level KPIs as cards."""
     items = [
         {"label": "Total sessions", "value": kpis.get("total_sessions", 0)},
-        _build_biggest_swing_card(kpis.get("biggest_swing")),
         {
-            "label": "Most profitable player (aka the bastard that's took all your money)",
+            "label": "Most profitable player (aka the bastard that took your money)",
             "value": kpis.get("top_winner") or "-",
             "delta": None if kpis.get("top_winner") is None else f"{kpis.get('top_winner_net', 0.0):.2f}",
         },
@@ -444,6 +443,7 @@ def render_kpi_row(kpis: Dict) -> None:
             "value": kpis.get("biggest_loser") or "-",
             "delta": None if kpis.get("biggest_loser") is None else f"{kpis.get('biggest_loser_net', 0.0):.2f}",
         },
+        _build_biggest_swing_card(kpis.get("biggest_swing")),
     ]
     render_metric_cards(items)
 
@@ -545,14 +545,14 @@ def render_standings_table(standings: pd.DataFrame) -> None:
             f"<td><span class='rank-badge {badge_class}'>{badge_text}</span></td>"
             f"<td><div class='player-cell'><span class='player-avatar'></span><strong>{row['player']}</strong></div></td>"
             f"<td style='color:{net_color}'>{net:.2f}</td>"
-            f"<td>{games_bar}</td>"
             f"<td>{win_bar}</td>"
+            f"<td>{games_bar}</td>"
             f"</tr>"
         )
 
     table_html = (
         "<table class='leaderboard-table'>"
-        "<thead><tr><th>Rank</th><th>Player</th><th>Net</th><th>Games</th><th>Win %</th></tr></thead>"
+        "<thead><tr><th>Rank</th><th>Player</th><th>Net</th><th>Win %</th><th>Games</th></tr></thead>"
         f"<tbody>{''.join(rows_html)}</tbody></table>"
     )
     st.markdown(f"<div class='arcade-card'>{table_html}</div>", unsafe_allow_html=True)
