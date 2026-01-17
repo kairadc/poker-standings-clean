@@ -1,0 +1,8 @@
+# Python
+__pycache__/
+.venv/
+
+# Secrets
+*poker-dashboard*.json
+.env
+.streamlit/secrets.toml
